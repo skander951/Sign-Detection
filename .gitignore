@@ -27,5 +27,5 @@ LossAnalysis.ipynb
 archive
 example_loggers
 
-pretrained/
-data/
+pretrained
+data
