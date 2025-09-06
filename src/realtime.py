@@ -1,4 +1,5 @@
 import cv2
+import cv2
 import torch
 from torch import load
 from model import DETR
@@ -53,7 +54,7 @@ while cap.isOpened():
 
     probabilities = result['pred_logits'].softmax(-1)[:,:,:-1] 
     max_probs, max_classes = probabilities.max(-1)
-    keep_mask = max_probs > 0.8
+    keep_mask = max_probs > 0.7
 
     batch_indices, query_indices = torch.where(keep_mask) 
 
@@ -74,11 +75,23 @@ while cap.isOpened():
             'bbox': [float(x1), float(y1), float(x2), float(y2)]
         })
         
+        h, w = frame.shape[:2]
+        # Dynamic scaling
+        thickness = max(1, h // 300)        # rectangle line thickness
+        font_scale = h / 800                # text scale
+        font_thickness = max(1, h // 400)   # text thickness
+        padding_y = max(20, h // 40)        # vertical padding for text background
+        box_width = max(100, w // 4)        # width of text background box
+
         # Draw bounding boxes on frame
-        frame = cv2.rectangle(frame, (int(x1),int(y1)), (int(x2),int(y2)), COLORS[bclass_idx], 10)
+        frame = cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)),COLORS[bclass_idx], thickness)
+        # Label background
+        frame = cv2.rectangle(frame,(int(x1), int(y1) - padding_y),(int(x1) + box_width, int(y1)),
+                            COLORS[bclass_idx], -1)
+        # Label text
         frame_text = f"{CLASSES[bclass_idx]} - {round(float(bprob_val),4)}"
-        frame = cv2.rectangle(frame, (int(x1),int(y1)-100), (int(x1)+700,int(y1)), COLORS[bclass_idx], -1)
-        frame = cv2.putText(frame, frame_text, (int(x1),int(y1)), cv2.FONT_HERSHEY_DUPLEX, 2, (255,255,255), 4, cv2.LINE_AA)
+        frame = cv2.putText(frame, frame_text,(int(x1), int(y1) - 5),cv2.FONT_HERSHEY_DUPLEX,
+                            font_scale, (255, 255, 255),font_thickness, cv2.LINE_AA)
 
     # Calculate FPS
     frame_count += 1
